@@ -95,8 +95,18 @@ StoreOps is a lightweight, high-performance web application designed for retail 
 
 ---
 
-## Developer Section
+## 👨‍💻 Developer & Support
 
-* **Lead Developer**: Amaanullah
-* **Email**: [info@amaanullah.com](mailto:info@amaanullah.com) / [akamaanullah@gmail.com](mailto:akamaanullah@gmail.com)
-* **Website**: [amaanullah.com](https://amaanullah.com)
+This platform is developed and maintained by **Amaanullah**. For custom setups, feature integrations, or professional deployment support, feel free to get in touch:
+
+| Resource | Link / Information |
+| :--- | :--- |
+| **Lead Developer** | **Amaanullah** |
+| **Primary Email** | [info@amaanullah.com](mailto:info@amaanullah.com) |
+| **Secondary Email** | [akamaanullah@gmail.com](mailto:akamaanullah@gmail.com) |
+| **Official Website** | [amaanullah.com](https://amaanullah.com) |
+
+> [!TIP]
+> **Custom Workflows & Deployment**
+> If you need help integrating third-party APIs, creating custom operational workflows, or setting up production-grade hosting servers, reach out via the business email listed above.
+
