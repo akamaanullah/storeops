@@ -44,9 +44,9 @@ if (empty($trendLabels)) {
     </div>
 
     <!-- Summary Cards Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5">
+    <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
         <!-- Card 1: Total Job Value -->
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Total Job Value</span>
                 <div class="w-7 h-7 rounded-lg bg-natural-pane border border-natural-border flex items-center justify-center text-natural-primary shrink-0">
@@ -57,12 +57,12 @@ if (empty($trendLabels)) {
             </div>
             <div>
                 <h3 class="text-xl font-bold text-natural-heading tracking-tight font-sans">$<?= number_format($metrics['total_contract'], 2) ?></h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Sum of all work order contract rates</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Sum of all contract rates</p>
             </div>
         </div>
 
         <!-- Card 2: Job Revenue -->
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Job Revenue</span>
                 <div class="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
@@ -78,7 +78,7 @@ if (empty($trendLabels)) {
         </div>
 
         <!-- Card 3: Vendor Payments -->
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Vendor Payments</span>
                 <div class="w-7 h-7 rounded-lg bg-rose-50 border border-rose-105 flex items-center justify-center text-rose-500 shrink-0">
@@ -89,13 +89,13 @@ if (empty($trendLabels)) {
             </div>
             <div>
                 <h3 class="text-xl font-bold text-rose-500 tracking-tight font-sans">$<?= number_format($metrics['total_vendor'], 2) ?></h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Total payout to operational vendors</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Total payout to vendors</p>
             </div>
         </div>
 
         <!-- Card 4: Net Revenue -->
         <?php $isNetPositive = ($metrics['net_revenue'] ?? 0.00) >= 0; ?>
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Net Revenue</span>
                 <div class="w-7 h-7 rounded-lg <?= $isNetPositive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-500' ?> border flex items-center justify-center shrink-0">
@@ -108,12 +108,12 @@ if (empty($trendLabels)) {
                 <h3 class="text-xl font-bold <?= $isNetPositive ? 'text-emerald-600' : 'text-rose-500' ?> tracking-tight font-sans">
                     $<?= number_format($metrics['net_revenue'], 2) ?>
                 </h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Job Revenue minus Vendor Costs</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Revenue minus vendor costs</p>
             </div>
         </div>
 
         <!-- Card 5: Outstanding Balance -->
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Outstanding Balance</span>
                 <div class="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
@@ -124,12 +124,12 @@ if (empty($trendLabels)) {
             </div>
             <div>
                 <h3 class="text-xl font-bold text-amber-500 tracking-tight font-sans">$<?= number_format($metrics['outstanding'], 2) ?></h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Client balance remaining to collect</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Client balance to collect</p>
             </div>
         </div>
 
         <!-- Card 6: Work Order Completion -->
-        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-4 space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Completion Rate</span>
                 <div class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 shrink-0">
@@ -140,7 +140,7 @@ if (empty($trendLabels)) {
             </div>
             <div>
                 <h3 class="text-xl font-bold text-natural-heading tracking-tight font-sans"><?= $metrics['completion_rate'] ?>%</h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5"><?= $metrics['completed_jobs'] ?> of <?= $metrics['total_jobs'] ?> work orders done</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5"><?= $metrics['completed_jobs'] ?> of <?= $metrics['total_jobs'] ?> jobs done</p>
             </div>
         </div>
     </div>
