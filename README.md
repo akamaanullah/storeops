@@ -1,25 +1,67 @@
 # StoreOps — Store Operations Management Platform
 
-A lightweight **StoreOps** web application built with **PHP 8+ (Custom MVC)**, **MySQL 8+**, and **Vanilla JS**. Features include role-based dashboards, work orders, realtime polling, browser notifications, comments, and payment tracking.
+StoreOps is a lightweight, high-performance web application designed for retail store operations, maintenance workflow tracking, and financial ledgers. Built with a custom, modern **PHP 8+ MVC Architecture** (without external package dependencies), **MySQL 8+**, **Vanilla JS**, and **Tailwind CSS**.
+
+---
+
+## Key Features
+
+### 📋 Work Order Lifecycle & Configuration
+* **Systematic Workflow**: Track work orders from inception to completion: `New` ➔ `Assigned` ➔ `Scheduled` ➔ `Work In Progress` ➔ `Pending` ➔ `Cancelled` ➔ `Done`.
+* **SLA Deadlines**: Set and monitor Service Level Agreement (SLA) deadlines per work order.
+* **Auto-generated Reference Codes**: Every job is automatically assigned a unique reference code (e.g., `WO-2026-00045`) for quick search and tracking.
+
+### 💰 Financial Ledger & Balance Tracking
+* **Contract Valuation**: Set contract value for each work order with real-time outstanding balance calculation.
+* **Payment Ledger**: Record full, partial, or pending payments directly on the work order dashboard.
+* **W-9 Clearance**: Mark W-9 form requirements and securely upload W-9 documents (PDF or image). Administrators can review and manage W-9 clearance directly.
+
+### 💬 Collaborative Discussion & Attachments
+* **Interactive Comments**: Add updates, technical notes, or status reports directly within work orders.
+* **Reactions**: Upvote/Downvote discussion points.
+* **Inline Edits**: Edit your comments directly from the timeline interface.
+* **Media Galleries**: Attach multiple images/documents to comments or jobs, preview them in a modal lightbox, or download all attachments compiled as a `.zip` archive.
+* **Unread Indicators**: Displays unread comment counts per job on your dashboard list.
+
+### 📊 Real-Time Analytics & Reporting
+* **Financial Metrics**: Track total job values, collected revenue, outstanding balances, and completion rates.
+* **Performance Charts**: Dynamic Chart.js visualizations (Doughnut charts for job status distribution and line charts for monthly collection trends).
+* **Staff Leaderboard**: Monitor assignee performance, including assigned vs. completed job ratios and revenue cleared.
+
+### ⚙️ System Settings & Polling Controls
+* **Real-time Updates**: Adjustable client polling intervals for global notifications, active dashboards, and hidden tab refreshes to optimize database performance.
+* **Role-Based Controls**: Secure, distinct dashboards for **Administrators**, **Team Leads**, and **Technicians/Coordinators**.
 
 ---
 
 ## Tech Stack
 
-- **Frontend**: HTML5, Tailwind CSS (compiled), Vanilla JS
-- **Backend**: Custom PHP MVC (no Composer required)
-- **Database**: MySQL 8+ with PDO prepared statements
-- **Auth**: Secure sessions + bcrypt password hashing
+* **Frontend**: HTML5, Tailwind CSS (compiled), Vanilla JS, Chart.js
+* **Backend**: Custom PHP 8 MVC (no Composer required)
+* **Database**: MySQL 8+ (PDO prepared statements)
+* **Authentication**: PHP Sessions + secure bcrypt password hashing
+
+---
+
+## Directory Layout
+
+```
+/app          Controllers, Models, and Core services
+/config       Unified application configurations
+/public       Web root (entry point index.php, assets, uploaded files)
+/views        Role-based templates (admin, team_lead, user)
+/migrations   Database migration scripts
+/schema.sql   Full MySQL database schema
+/storage/logs Application error logs
+```
 
 ---
 
 ## Production Deployment
 
-1. **Upload files** to your hosting account.
-
-2. **Document root** must point to the `/public` folder.
-
-3. **Environment** — copy `.env.example` to `.env` and set:
+1. **Upload files** to your hosting server.
+2. **Configure Web Server**: Point the domain document root to the `/public` folder.
+3. **Environment Setup**: Copy `.env.example` to `.env` and configure your credentials:
    ```env
    DB_HOST=localhost
    DB_USER=your_db_user
@@ -28,59 +70,33 @@ A lightweight **StoreOps** web application built with **PHP 8+ (Custom MVC)**, *
    APP_ENV=production
    BASE_URL=https://yourdomain.com
    ```
-
-4. **Database** — in phpMyAdmin, select your database and import `schema.sql` (fresh install only).
-
-5. **Create admin user** — after import, insert an admin account or use Manage Users once logged in.
-
-6. **CSS build** (on your machine before upload, or on server if Node is available):
+4. **Database Import**: Create a MySQL database and import `schema.sql`. Run any additional migrations or use `public/update_db.php` to update an existing schema (remove/rename this file after execution).
+5. **Compile Tailwind CSS** (if styling changes are made):
    ```bash
    npm install
    npm run build:css
    ```
-
-7. **Permissions** — ensure these are writable by the web server:
+6. **Set File Permissions**: Ensure these directories are writable by the web server (e.g., `chmod -R 775`):
    - `storage/logs/`
    - `public/uploads/`
-
-8. **PHP extensions required**: `pdo_mysql`, `fileinfo`, `zip`
-
-9. **Security checklist**:
-   - `APP_ENV=production` in `.env`
-   - Strong database password
-   - `.env` never committed to git
-   - HTTPS enabled on domain
+7. **Required PHP Extensions**: `pdo_mysql`, `fileinfo`, `zip`
 
 ---
 
 ## Local Development
 
-1. Create a MySQL database and import `schema.sql`.
-2. Copy `.env.example` to `.env` with local credentials.
-3. Set `APP_ENV=development` for local debugging.
-4. Run `npm install && npm run build:css`.
-5. Point Apache to `/public` or use:
+1. Set up a local Apache/MySQL server (e.g., XAMPP).
+2. Create a database, configure `.env` with `APP_ENV=development`.
+3. Import `schema.sql` to your local database.
+4. Run locally with Apache pointing to `/public` or start the built-in server:
    ```bash
    php -S localhost:8000 -t public
    ```
 
 ---
 
-## Directory Layout
+## Developer Section
 
-```
-/app          Controllers, Models, Core services
-/config       Application configuration
-/public       Web root (index.php, css, uploads)
-/views        Role-based templates (admin, team_lead, user)
-/schema.sql   Complete database schema
-/storage/logs Error logs (production)
-```
-
----
-
-## Work Order Workflow
-
-`New → Assigned → Scheduled → Work In Progress → Done`
-
-Roles: **Administrator**, **Team Lead**, **User**
+* **Lead Developer**: Amaanullah
+* **Email**: [info@amaanullah.com](mailto:info@amaanullah.com) / [akamaanullah@gmail.com](mailto:akamaanullah@gmail.com)
+* **Website**: [amaanullah.com](https://amaanullah.com)
