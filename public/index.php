@@ -104,6 +104,7 @@ $router->get('jobs/{id}/attachments/download', 'JobController@downloadAttachment
 $router->post('jobs/{id}/complete', 'JobController@markComplete');
 $router->post('jobs/{id}/read', 'JobController@markRead');
 $router->post('jobs/{id}/total-amount', 'JobController@updateTotalAmount');
+$router->post('jobs/{id}/vendor-amount', 'JobController@updateVendorAmount');
 $router->post('jobs/{id}/delete', 'JobController@delete');
 
 // Comments and Comment Votes Routes

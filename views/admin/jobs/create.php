@@ -80,8 +80,14 @@ include __DIR__ . '/../layout/header.php';
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Total Job Amount -->
                 <div class="space-y-1.5">
-                    <label for="total_amount" class="text-[9px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Total Job Amount ($)</label>
+                    <label for="total_amount" class="text-[9px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Total Client Amount ($)</label>
                     <input id="total_amount" type="number" step="0.01" min="0" name="total_amount" value="<?= htmlspecialchars($old['total_amount'] ?? '0.00') ?>" placeholder="0.00" class="w-full px-4 py-3 border border-natural-border focus:outline-none focus:ring-2 focus:ring-natural-primary/50 focus:border-natural-primary rounded-xl bg-natural-bg/50 text-xs text-natural-text">
+                </div>
+
+                <!-- Vendor Amount -->
+                <div class="space-y-1.5">
+                    <label for="vendor_amount" class="text-[9px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Total Vendor Amount ($)</label>
+                    <input id="vendor_amount" type="number" step="0.01" min="0" name="vendor_amount" value="<?= htmlspecialchars($old['vendor_amount'] ?? '0.00') ?>" placeholder="0.00" class="w-full px-4 py-3 border border-natural-border focus:outline-none focus:ring-2 focus:ring-natural-primary/50 focus:border-natural-primary rounded-xl bg-natural-bg/50 text-xs text-natural-text">
                 </div>
             </div>
 

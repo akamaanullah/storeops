@@ -20,27 +20,38 @@ class AnalyticsController extends Controller {
 
         try {
             // 1. Core Summary Metrics
-            // Total contract value (total amount set on jobs)
+            // Total client contract value (total amount set on jobs)
             $stmt = $db->query("SELECT IFNULL(SUM(total_amount), 0.00) FROM jobs");
             $totalContractValue = (float)$stmt->fetchColumn();
 
-            // Total client collections (Job Revenue)
-            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND category = 'client'");
+            // Total vendor contract value (vendor amount set on jobs)
+            $stmt = $db->query("SELECT IFNULL(SUM(vendor_amount), 0.00) FROM jobs");
+            $totalVendorContract = (float)$stmt->fetchColumn();
+
+            // Total client payments collected (completed full/partial client payments)
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND party = 'client'");
             $totalCollected = (float)$stmt->fetchColumn();
 
-            // Total vendor payments (Vendor Cost)
-            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND category = 'vendor'");
-            $totalVendorCost = (float)$stmt->fetchColumn();
-
-            // Net Revenue (Job Revenue - Vendor Cost)
-            $netRevenue = $totalCollected - $totalVendorCost;
+            // Total vendor payouts paid (completed full/partial vendor payments)
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND party = 'vendor'");
+            $totalVendorPaid = (float)$stmt->fetchColumn();
 
             // Total pending client payments
-            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type = 'pending' AND category = 'client'");
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type = 'pending' AND party = 'client'");
             $totalPending = (float)$stmt->fetchColumn();
 
-            // Outstanding balance (Total Contract - Client Collected)
+            // Total pending vendor payments
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type = 'pending' AND party = 'vendor'");
+            $totalVendorPending = (float)$stmt->fetchColumn();
+
+            // Outstanding balance (Client owes us)
             $outstandingBalance = max(0.00, $totalContractValue - $totalCollected);
+
+            // Vendor Outstanding balance (We owe vendor)
+            $vendorOutstanding = max(0.00, $totalVendorContract - $totalVendorPaid);
+
+            // Net Margin (Profit = Client Collected - Vendor Paid)
+            $netProfit = $totalCollected - $totalVendorPaid;
 
             // Jobs counters
             $stmt = $db->query("SELECT COUNT(*) FROM jobs");
@@ -62,21 +73,33 @@ class AnalyticsController extends Controller {
             // 4. Monthly Collection Trends (Past 12 Months)
             $stmt = $db->query("
                 SELECT DATE_FORMAT(created_at, '%b %Y') as month_label,
-                       SUM(amount) as total
+                       SUM(CASE WHEN party = 'client' THEN amount ELSE 0 END) as client_total,
+                       SUM(CASE WHEN party = 'vendor' THEN amount ELSE 0 END) as vendor_total
                 FROM payments
-                WHERE type != 'pending' AND category = 'client'
+                WHERE type != 'pending'
                 GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b %Y')
                 ORDER BY MIN(created_at) ASC
                 LIMIT 12
             ");
-            $monthlyTrends = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $monthlyTrends = [];
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $cTotal = (float)$row['client_total'];
+                $vTotal = (float)$row['vendor_total'];
+                $monthlyTrends[] = [
+                    'month_label' => $row['month_label'],
+                    'client_total' => $cTotal,
+                    'vendor_total' => $vTotal,
+                    'profit_total' => $cTotal - $vTotal
+                ];
+            }
 
             // 5. Staff Performance Leaderboard
             $stmt = $db->query("
                 SELECT u.id, u.full_name, u.role,
                        COUNT(j.id) as total_assigned,
                        SUM(CASE WHEN j.status = 'Done' THEN 1 ELSE 0 END) as total_completed,
-                       IFNULL(SUM(CASE WHEN p.type != 'pending' AND p.category = 'client' THEN p.amount ELSE 0 END), 0) as total_collected
+                       IFNULL(SUM(CASE WHEN p.type != 'pending' AND p.party = 'client' THEN p.amount ELSE 0 END), 0) as total_collected
                 FROM users u
                 LEFT JOIN jobs j ON j.assigned_to = u.id
                 LEFT JOIN payments p ON p.job_id = j.id
@@ -99,11 +122,14 @@ class AnalyticsController extends Controller {
                 'user' => $currentUser,
                 'metrics' => [
                     'total_contract' => $totalContractValue,
+                    'total_vendor_contract' => $totalVendorContract,
                     'total_collected' => $totalCollected,
-                    'total_vendor' => $totalVendorCost,
-                    'net_revenue' => $netRevenue,
+                    'total_vendor_paid' => $totalVendorPaid,
                     'total_pending' => $totalPending,
+                    'total_vendor_pending' => $totalVendorPending,
                     'outstanding' => $outstandingBalance,
+                    'vendor_outstanding' => $vendorOutstanding,
+                    'net_profit' => $netProfit,
                     'total_jobs' => $totalJobs,
                     'completed_jobs' => $completedJobs,
                     'completion_rate' => $completionRate

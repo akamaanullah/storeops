@@ -38,6 +38,9 @@ class Job extends Model {
         // Total contract/job amount
         public ?float $total_amount = 0.00,
 
+        // Total contract amount paid/owed to vendor
+        public ?float $vendor_amount = 0.00,
+
         // Job SLA deadline date
         public ?string $sla_date = null
     ) {}
@@ -207,6 +210,7 @@ class Job extends Model {
             creator_name: $row['creator_name'] ?? null,
             w9_form_path: $row['w9_form_path'] ?? null,
             total_amount: isset($row['total_amount']) ? (float)$row['total_amount'] : 0.00,
+            vendor_amount: isset($row['vendor_amount']) ? (float)$row['vendor_amount'] : 0.00,
             sla_date: $row['sla_date'] ?? null
         );
     }
@@ -400,7 +404,7 @@ class Job extends Model {
             $sql = "UPDATE jobs SET 
                         store_name = ?, location = ?, address = ?, issue = ?, 
                         designation = ?, status = ?, urgency = ?, w9 = ?, 
-                        assigned_to = ?, total_amount = ?, created_at = ?, sla_date = ? WHERE id = ?";
+                        assigned_to = ?, total_amount = ?, vendor_amount = ?, created_at = ?, sla_date = ? WHERE id = ?";
             
             $stmt = $db->prepare($sql);
             return $stmt->execute([
@@ -414,6 +418,7 @@ class Job extends Model {
                 $this->w9,
                 $this->assigned_to,
                 $this->total_amount,
+                $this->vendor_amount,
                 $this->created_at,
                 $this->sla_date,
                 $this->id
@@ -422,8 +427,8 @@ class Job extends Model {
 
         $this->created_at = $this->created_at ?: date('Y-m-d H:i:s');
 
-        $sql = "INSERT INTO jobs (store_name, location, address, issue, designation, status, urgency, w9, assigned_to, created_by, total_amount, created_at, sla_date) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO jobs (store_name, location, address, issue, designation, status, urgency, w9, assigned_to, created_by, total_amount, vendor_amount, created_at, sla_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $db->prepare($sql);
         $success = $stmt->execute([
@@ -438,6 +443,7 @@ class Job extends Model {
             $this->assigned_to,
             $this->created_by,
             $this->total_amount ?: 0.00,
+            $this->vendor_amount ?: 0.00,
             $this->created_at,
             $this->sla_date
         ]);
@@ -507,6 +513,20 @@ class Job extends Model {
         $success = $stmt->execute([$amount, $this->id]);
         if ($success) {
             $this->total_amount = $amount;
+        }
+        return $success;
+    }
+
+    /**
+     * Save the total vendor amount for this work order.
+     */
+    public function saveVendorAmount(float $amount): bool {
+        if (!$this->id) return false;
+        $db = $this->getDB();
+        $stmt = $db->prepare("UPDATE jobs SET vendor_amount = ? WHERE id = ?");
+        $success = $stmt->execute([$amount, $this->id]);
+        if ($success) {
+            $this->vendor_amount = $amount;
         }
         return $success;
     }

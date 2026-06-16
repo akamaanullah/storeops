@@ -6,90 +6,157 @@
 $canRecordPayment = $isAdminOrTL || $isAssigned;
 $w9DeleteUrl = BASE_URL . $job->path() . '/w9/delete';
 $updateAmountUrl = BASE_URL . $job->path() . '/total-amount';
+$updateVendorAmountUrl = BASE_URL . $job->path() . '/vendor-amount';
 
 $totalClientPaid = 0.00;
 $totalVendorPaid = 0.00;
+$totalClientPending = 0.00;
+$totalVendorPending = 0.00;
+
 foreach ($payments as $pay) {
-    if (($pay['type'] ?? '') !== 'pending') {
-        if (($pay['category'] ?? 'client') === 'vendor') {
-            $totalVendorPaid += (float)$pay['amount'];
+    $amt = (float)$pay['amount'];
+    $isPending = ($pay['type'] ?? '') === 'pending';
+    $party = $pay['party'] ?? 'client';
+    
+    if ($party === 'vendor') {
+        if ($isPending) {
+            $totalVendorPending += $amt;
         } else {
-            $totalClientPaid += (float)$pay['amount'];
+            $totalVendorPaid += $amt;
+        }
+    } else {
+        if ($isPending) {
+            $totalClientPending += $amt;
+        } else {
+            $totalClientPaid += $amt;
         }
     }
 }
-$totalAmount = (float)($job->total_amount ?? 0.00);
-$remainingBalance = $totalAmount - $totalClientPaid;
-$netJobRevenue = $totalClientPaid - $totalVendorPaid;
+
+$totalClientAmount = (float)($job->total_amount ?? 0.00);
+$totalVendorAmount = (float)($job->vendor_amount ?? 0.00);
+
+$clientRemaining = $totalClientAmount - $totalClientPaid;
+$vendorRemaining = $totalVendorAmount - $totalVendorPaid;
+
+// Net margin (Collected revenue minus vendor payouts)
+$netMargin = $totalClientPaid - $totalVendorPaid;
 ?>
 
 <!-- Financial Summary Panel -->
 <div id="financial-summary-panel" class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-4 mb-6">
     <div>
         <h2 class="font-bold text-natural-heading tracking-tight text-sm">Financial Summary</h2>
-        <p class="text-[10px] text-natural-muted mt-0.5">Overall contract value and balances</p>
+        <p class="text-[10px] text-natural-muted mt-0.5">Client revenue and vendor payouts split</p>
     </div>
 
-    <div class="space-y-3 text-xs">
-        <!-- Total Job Value Display Row -->
-        <div id="total-amount-display-row" class="flex justify-between items-center py-2 border-b border-natural-border/50">
-            <span class="text-natural-muted font-medium">Total Job Value:</span>
-            <div class="flex items-center space-x-2 font-bold text-natural-heading">
-                <span id="total-amount-value">$<?= number_format($totalAmount, 2) ?></span>
-                <?php if ($canRecordPayment): ?>
-                    <button type="button" onclick="startEditTotalAmount()" class="text-natural-primary hover:text-natural-primary-hover focus:outline-none" title="Edit Total Amount">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
-                        </svg>
-                    </button>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Total Job Value Edit Row -->
-        <?php if ($canRecordPayment): ?>
-            <div id="total-amount-edit-row" class="hidden py-2 border-b border-natural-border/50">
-                <div class="flex items-center justify-between w-full">
-                    <span class="text-natural-muted font-medium">Edit Value:</span>
-                    <div class="flex items-center space-x-1.5">
-                        <div class="flex items-center space-x-1">
-                            <span class="text-natural-muted font-bold text-xs">$</span>
-                            <input id="total-amount-input" type="number" step="0.01" min="0" value="<?= htmlspecialchars(number_format($totalAmount, 2, '.', '')) ?>" class="w-20 px-2 py-1 text-xs border border-natural-border rounded-lg bg-natural-bg/50 focus:outline-none font-bold text-natural-heading text-right">
+    <div class="space-y-4 text-xs">
+        <!-- Split Grid -->
+        <div class="grid grid-cols-2 gap-4">
+            <!-- Client Side -->
+            <div class="space-y-2 border-r border-natural-border/60 pr-2">
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Client Account</span>
+                
+                <!-- Client Expected -->
+                <div class="space-y-1">
+                    <span class="text-natural-muted font-medium block text-[10px]">Expected Value</span>
+                    <div id="total-amount-display-row" class="flex items-center space-x-1.5 font-bold text-natural-heading">
+                        <span id="total-amount-value" class="text-xs">$<?= number_format($totalClientAmount, 2) ?></span>
+                        <?php if ($canRecordPayment): ?>
+                            <button type="button" onclick="startEditTotalAmount()" class="text-natural-primary hover:text-natural-primary-hover focus:outline-none" title="Edit Client Expected Value">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($canRecordPayment): ?>
+                        <div id="total-amount-edit-row" class="hidden">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-natural-muted font-bold text-xs">$</span>
+                                <input id="total-amount-input" type="number" step="0.01" min="0" value="<?= htmlspecialchars(number_format($totalClientAmount, 2, '.', '')) ?>" class="w-16 px-1.5 py-0.5 text-xs border border-natural-border rounded bg-natural-bg/50 focus:outline-none font-bold text-natural-heading text-right font-mono">
+                                <button type="button" onclick="saveTotalAmount()" class="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[8px] rounded">Save</button>
+                                <button type="button" onclick="cancelEditTotalAmount()" class="px-1.5 py-0.5 bg-natural-pane border border-natural-border text-natural-muted hover:text-natural-primary font-bold text-[8px] rounded">X</button>
+                            </div>
                         </div>
-                        <button type="button" onclick="saveTotalAmount()" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[9px] rounded-lg shadow-sm">Save</button>
-                        <button type="button" onclick="cancelEditTotalAmount()" class="px-2 py-1 bg-natural-pane border border-natural-border text-natural-muted hover:text-natural-primary font-bold text-[9px] rounded-lg">Cancel</button>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Client Received -->
+                <div class="space-y-0.5 pt-1.5">
+                    <span class="text-natural-muted font-medium block text-[10px]">Received Revenue</span>
+                    <span id="client-paid-display" class="font-bold text-emerald-600">$<?= number_format($totalClientPaid, 2) ?></span>
+                </div>
+
+                <!-- Client Outstanding -->
+                <div class="space-y-0.5 pt-1.5">
+                    <span class="text-natural-muted font-medium block text-[10px]">Remaining Due</span>
+                    <div class="flex flex-wrap items-center gap-1">
+                        <span id="client-remaining-display" class="font-bold <?= $clientRemaining <= 0 && $totalClientAmount > 0 ? 'text-emerald-600' : 'text-rose-500' ?>">
+                            $<?= number_format(max(0.00, $clientRemaining), 2) ?>
+                        </span>
+                        <span id="paid-in-full-badge" class="<?= $clientRemaining <= 0 && $totalClientAmount > 0 ? 'inline-block' : 'hidden' ?> px-1 bg-emerald-50 text-emerald-700 text-[7px] font-extrabold uppercase border border-emerald-200 rounded">Paid</span>
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
 
-        <!-- Paid So Far (Job Revenue) -->
-        <div class="flex justify-between items-center py-2 border-b border-natural-border/50">
-            <span class="text-natural-muted font-medium">Job Revenue (Collected):</span>
-            <span id="total-paid-display" class="font-bold text-emerald-600">$<?= number_format($totalClientPaid, 2) ?></span>
-        </div>
+            <!-- Vendor Side -->
+            <div class="space-y-2">
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Vendor Account</span>
 
-        <!-- Vendor Cost -->
-        <div class="flex justify-between items-center py-2 border-b border-natural-border/50">
-            <span class="text-natural-muted font-medium text-rose-605">Vendor Cost:</span>
-            <span class="font-bold text-rose-600">$<?= number_format($totalVendorPaid, 2) ?></span>
-        </div>
+                <!-- Vendor Expected -->
+                <div class="space-y-1">
+                    <span class="text-natural-muted font-medium block text-[10px]">Contract Value</span>
+                    <div id="vendor-amount-display-row" class="flex items-center space-x-1.5 font-bold text-natural-heading">
+                        <span id="vendor-amount-value" class="text-xs">$<?= number_format($totalVendorAmount, 2) ?></span>
+                        <?php if ($canRecordPayment): ?>
+                            <button type="button" onclick="startEditVendorAmount()" class="text-natural-primary hover:text-natural-primary-hover focus:outline-none" title="Edit Vendor Contract Value">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                </svg>
+                            </button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($canRecordPayment): ?>
+                        <div id="vendor-amount-edit-row" class="hidden">
+                            <div class="flex items-center space-x-1">
+                                <span class="text-natural-muted font-bold text-xs">$</span>
+                                <input id="vendor-amount-input" type="number" step="0.01" min="0" value="<?= htmlspecialchars(number_format($totalVendorAmount, 2, '.', '')) ?>" class="w-16 px-1.5 py-0.5 text-xs border border-natural-border rounded bg-natural-bg/50 focus:outline-none font-bold text-natural-heading text-right font-mono">
+                                <button type="button" onclick="saveVendorAmount()" class="px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[8px] rounded">Save</button>
+                                <button type="button" onclick="cancelEditVendorAmount()" class="px-1.5 py-0.5 bg-natural-pane border border-natural-border text-natural-muted hover:text-natural-primary font-bold text-[8px] rounded">X</button>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
 
-        <!-- Net Revenue -->
-        <div class="flex justify-between items-center py-2 border-b border-natural-border/50 bg-natural-pane/25 px-2.5 -mx-2.5 rounded-xl">
-            <span class="text-natural-heading font-bold">Net Revenue:</span>
-            <span class="font-bold <?= $netJobRevenue >= 0 ? 'text-emerald-600' : 'text-rose-500' ?>">$<?= number_format($netJobRevenue, 2) ?></span>
-        </div>
+                <!-- Vendor Paid -->
+                <div class="space-y-0.5 pt-1.5">
+                    <span class="text-natural-muted font-medium block text-[10px]">Vendor Payouts</span>
+                    <span id="vendor-paid-display" class="font-bold text-blue-650 text-blue-600">$<?= number_format($totalVendorPaid, 2) ?></span>
+                </div>
 
-        <!-- Remaining Balance -->
-        <div class="flex justify-between items-center py-2">
-            <span class="text-natural-muted font-medium">Remaining Balance:</span>
-            <div class="flex items-center space-x-2">
-                <span id="remaining-balance-display" class="font-bold <?= $remainingBalance <= 0 && $totalAmount > 0 ? 'text-emerald-600' : 'text-rose-500' ?>">
-                    <?= $remainingBalance < 0 ? '-$' . number_format(abs($remainingBalance), 2) : '$' . number_format($remainingBalance, 2) ?>
-                </span>
-                <span id="paid-in-full-badge" class="<?= $remainingBalance <= 0 && $totalAmount > 0 ? 'inline-block' : 'hidden' ?> px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[8px] font-extrabold uppercase border border-emerald-200 rounded">Paid In Full</span>
+                <!-- Vendor Outstanding -->
+                <div class="space-y-0.5 pt-1.5">
+                    <span class="text-natural-muted font-medium block text-[10px]">Remaining Due</span>
+                    <div class="flex flex-wrap items-center gap-1">
+                        <span id="vendor-remaining-display" class="font-bold <?= $vendorRemaining <= 0 && $totalVendorAmount > 0 ? 'text-emerald-600' : 'text-rose-500' ?>">
+                            $<?= number_format(max(0.00, $vendorRemaining), 2) ?>
+                        </span>
+                        <span id="vendor-paid-in-full-badge" class="<?= $vendorRemaining <= 0 && $totalVendorAmount > 0 ? 'inline-block' : 'hidden' ?> px-1 bg-emerald-50 text-emerald-700 text-[7px] font-extrabold uppercase border border-emerald-200 rounded">Paid</span>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Net Margin Row -->
+        <div class="pt-4 border-t border-natural-border/60 flex items-center justify-between">
+            <div class="space-y-0.5">
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Realized Net Margin</span>
+                <p class="text-[9.5px] text-natural-muted">Collected Revenue minus Vendor Payouts</p>
+            </div>
+            <span id="net-margin-value" class="text-base font-bold <?= $netMargin > 0 ? 'text-emerald-600' : ($netMargin < 0 ? 'text-rose-500' : 'text-natural-heading') ?>">
+                <?= $netMargin < 0 ? '-$' . number_format(abs($netMargin), 2) : '$' . number_format($netMargin, 2) ?>
+            </span>
         </div>
     </div>
 </div>
@@ -165,31 +232,30 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
         <?php else: ?>
             <div class="divide-y divide-natural-border max-h-56 overflow-y-auto pr-1">
                 <?php foreach ($payments as $pay): ?>
-                    <?php
-                        $isVendor = (($pay['category'] ?? 'client') === 'vendor');
-                        $catBadge = $isVendor ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
-                        $catLabel = $isVendor ? 'Vendor' : 'Client';
-                    ?>
                     <div class="py-3 flex flex-col space-y-1.5 text-xs text-natural-text leading-relaxed">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold <?= $isVendor ? 'text-rose-600' : 'text-natural-heading' ?>">
-                                <?= $isVendor ? '- ' : '' ?>$<?= number_format($pay['amount'], 2) ?>
-                            </span>
-                            <div class="flex items-center space-x-1.5">
-                                <span class="px-1.5 py-0.5 rounded text-[8px] font-bold border <?= $catBadge ?>"><?= $catLabel ?></span>
+                            <span class="font-bold text-natural-heading font-mono">$<?= number_format($pay['amount'], 2) ?></span>
+                            <div class="flex items-center space-x-2">
+                                <?php
+                                $partyLabel = ($pay['party'] ?? 'client') === 'vendor' ? 'Vendor Payout' : 'Client Revenue';
+                                $partyBadgeClass = ($pay['party'] ?? 'client') === 'vendor' 
+                                    ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                    : 'bg-emerald-50 text-emerald-700 border-emerald-150';
+                                ?>
+                                <span class="px-1.5 py-0.5 rounded border text-[7px] font-extrabold uppercase <?= $partyBadgeClass ?>"><?= $partyLabel ?></span>
                                 <span class="px-2 py-0.5 bg-natural-pane text-natural-primary uppercase tracking-wider font-bold text-[8px] rounded border border-natural-border"><?= htmlspecialchars($pay['type']) ?></span>
                                 <?php if ($canRecordPayment): ?>
                                     <?php
-                                        // Non-admins cannot edit vendor payments
-                                        $canEditThis = !$isVendor || (Auth::user()['role'] ?? '') === 'admin';
-                                        if ($canEditThis):
+                                    // Non-admins cannot edit client payments
+                                    $canEditThisPayment = Auth::user()['role'] === 'admin' || (($pay['party'] ?? 'client') === 'vendor');
                                     ?>
+                                    <?php if ($canEditThisPayment): ?>
                                         <button type="button" onclick="editPaymentLedger(<?= htmlspecialchars(json_encode([
-                                            'id'       => (int)$pay['id'],
-                                            'amount'   => (float)$pay['amount'],
-                                            'type'     => $pay['type'],
-                                            'category' => $pay['category'] ?? 'client',
-                                            'note'     => $pay['note']
+                                            'id'     => (int)$pay['id'],
+                                            'amount' => (float)$pay['amount'],
+                                            'type'   => $pay['type'],
+                                            'party'  => $pay['party'] ?? 'client',
+                                            'note'   => $pay['note']
                                         ])) ?>)" class="text-[10px] text-natural-primary font-bold hover:underline transition-colors focus:outline-none">Edit</button>
                                     <?php endif; ?>
                                 <?php endif; ?>
@@ -212,7 +278,7 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                 <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1">
                         <label for="amount_billing" class="text-[8px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Amount ($)</label>
-                        <input id="amount_billing" type="number" step="0.01" name="amount" required placeholder="0.00" class="w-full px-3 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none">
+                        <input id="amount_billing" type="number" step="0.01" name="amount" required placeholder="0.00" class="w-full px-3 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none font-mono">
                     </div>
 
                     <div class="space-y-1">
@@ -225,16 +291,17 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                     </div>
                 </div>
 
-                <?php if ((Auth::user()['role'] ?? '') === 'admin'): ?>
+                <!-- Transaction Target Party (Admin Only can record client payments) -->
+                <?php if (Auth::user()['role'] === 'admin'): ?>
                     <div class="space-y-1">
-                        <label for="category_billing" class="text-[8px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Category</label>
-                        <select id="category_billing" name="category" class="w-full px-2 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none">
+                        <label for="party_billing" class="text-[8px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Ledger Category</label>
+                        <select id="party_billing" name="party" class="w-full px-2 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none">
                             <option value="client">Client Payment (Revenue)</option>
-                            <option value="vendor">Vendor Payment (Cost)</option>
+                            <option value="vendor">Vendor Payment (Payout)</option>
                         </select>
                     </div>
                 <?php else: ?>
-                    <input type="hidden" id="category_billing" name="category" value="client">
+                    <input type="hidden" id="party_billing" name="party" value="vendor">
                 <?php endif; ?>
 
                 <div class="space-y-1">
@@ -268,9 +335,10 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                 document.getElementById('amount_billing').value = payment.amount;
                 document.getElementById('type_billing').value = payment.type;
                 document.getElementById('note_billing').value = payment.note;
-                const categoryEl = document.getElementById('category_billing');
-                if (categoryEl) {
-                    categoryEl.value = payment.category || 'client';
+
+                const partySelect = document.getElementById('party_billing');
+                if (partySelect) {
+                    partySelect.value = payment.party || 'client';
                 }
 
                 // Switch form mode
@@ -296,9 +364,10 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                 document.getElementById('amount_billing').value = '';
                 document.getElementById('type_billing').value = 'partial';
                 document.getElementById('note_billing').value = '';
-                const categoryEl = document.getElementById('category_billing');
-                if (categoryEl) {
-                    categoryEl.value = 'client';
+
+                const partySelect = document.getElementById('party_billing');
+                if (partySelect && partySelect.type !== 'hidden') {
+                    partySelect.value = 'client';
                 }
 
                 // Switch back to Record mode
@@ -436,15 +505,14 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                         input.value = newAmt.toFixed(2);
 
                         // Recalculate financial summary
-                        const paidText = document.getElementById('total-paid-display').textContent.replace(/[^0-9.]/g, '');
+                        const paidText = document.getElementById('client-paid-display').textContent.replace(/[^0-9.]/g, '');
                         const paidAmt = parseFloat(paidText) || 0.00;
                         const remaining = newAmt - paidAmt;
 
-                        const balDisplay = document.getElementById('remaining-balance-display');
-                        const formattedRemaining = remaining < 0
+                        const balDisplay = document.getElementById('client-remaining-display');
+                        balDisplay.textContent = remaining < 0
                             ? '-$' + Math.abs(remaining).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                             : '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                        balDisplay.textContent = formattedRemaining;
 
                         const badge = document.getElementById('paid-in-full-badge');
                         if (remaining <= 0 && newAmt > 0) {
@@ -457,6 +525,7 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                             badge.classList.remove('inline-block');
                         }
 
+                        recalculateNetMargins();
                         cancelEditTotalAmount();
                     } else {
                         alert(data.error || 'Failed to update total amount.');
@@ -468,6 +537,110 @@ $netJobRevenue = $totalClientPaid - $totalVendorPaid;
                     saveBtn.textContent = originalText;
                 }
             };
+
+            // ── Vendor Amount script ──────
+            window.startEditVendorAmount = function() {
+                document.getElementById('vendor-amount-display-row').classList.add('hidden');
+                document.getElementById('vendor-amount-edit-row').classList.remove('hidden');
+                document.getElementById('vendor-amount-input').focus();
+            };
+
+            window.cancelEditVendorAmount = function() {
+                document.getElementById('vendor-amount-display-row').classList.remove('hidden');
+                document.getElementById('vendor-amount-edit-row').classList.add('hidden');
+            };
+
+            window.saveVendorAmount = async function() {
+                const input = document.getElementById('vendor-amount-input');
+                const val = parseFloat(input.value);
+                if (isNaN(val) || val < 0) {
+                    alert('Please enter a valid amount (greater than or equal to 0).');
+                    return;
+                }
+
+                const saveBtn = document.querySelector('#vendor-amount-edit-row button[onclick="saveVendorAmount()"]');
+                const originalText = saveBtn.textContent;
+                saveBtn.disabled = true;
+                saveBtn.textContent = '...';
+
+                try {
+                    const fd = new FormData();
+                    fd.append('vendor_amount', val);
+                    fd.append('csrf_token', '<?= CSRF::generateToken() ?>');
+
+                    const res = await fetch('<?= $updateVendorAmountUrl ?>', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-Token': '<?= CSRF::generateToken() ?>'
+                        },
+                        body: fd
+                    });
+
+                    const data = await res.json();
+                    if (data.success) {
+                        const newAmt = parseFloat(data.vendor_amount);
+                        
+                        // Update display text and input value
+                        document.getElementById('vendor-amount-value').textContent = '$' + newAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        input.value = newAmt.toFixed(2);
+
+                        // Recalculate financial summary
+                        const paidText = document.getElementById('vendor-paid-display').textContent.replace(/[^0-9.]/g, '');
+                        const paidAmt = parseFloat(paidText) || 0.00;
+                        const remaining = newAmt - paidAmt;
+
+                        const balDisplay = document.getElementById('vendor-remaining-display');
+                        balDisplay.textContent = remaining < 0
+                            ? '-$' + Math.abs(remaining).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : '$' + remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        const badge = document.getElementById('vendor-paid-in-full-badge');
+                        if (remaining <= 0 && newAmt > 0) {
+                            balDisplay.className = 'font-bold text-emerald-600';
+                            badge.classList.remove('hidden');
+                            badge.classList.add('inline-block');
+                        } else {
+                            balDisplay.className = 'font-bold text-rose-500';
+                            badge.classList.add('hidden');
+                            badge.classList.remove('inline-block');
+                        }
+
+                        recalculateNetMargins();
+                        cancelEditVendorAmount();
+                    } else {
+                        alert(data.error || 'Failed to update vendor amount.');
+                    }
+                } catch (e) {
+                    alert('An unexpected error occurred.');
+                } finally {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = originalText;
+                }
+            };
+
+            function recalculateNetMargins() {
+                const clientPaidText = document.getElementById('client-paid-display').textContent.replace(/[^0-9.]/g, '');
+                const clientPaid = parseFloat(clientPaidText) || 0.00;
+
+                const vendorPaidText = document.getElementById('vendor-paid-display').textContent.replace(/[^0-9.]/g, '');
+                const vendorPaid = parseFloat(vendorPaidText) || 0.00;
+
+                const netMargin = clientPaid - vendorPaid;
+                const marginDisplay = document.getElementById('net-margin-value');
+                
+                marginDisplay.textContent = netMargin < 0
+                    ? '-$' + Math.abs(netMargin).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '$' + netMargin.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                if (netMargin > 0) {
+                    marginDisplay.className = 'text-base font-bold text-emerald-600';
+                } else if (netMargin < 0) {
+                    marginDisplay.className = 'text-base font-bold text-rose-600';
+                } else {
+                    marginDisplay.className = 'text-base font-bold text-natural-heading';
+                }
+            }
         </script>
     <?php endif; ?>
 </div>

@@ -177,6 +177,7 @@ class JobController extends Controller {
         }
 
         $total_amount = isset($_POST['total_amount']) ? max(0.0, (float)$_POST['total_amount']) : 0.00;
+        $vendor_amount = isset($_POST['vendor_amount']) ? max(0.0, (float)$_POST['vendor_amount']) : 0.00;
         $created_at = !empty($_POST['created_at']) ? date('Y-m-d H:i:s', strtotime($_POST['created_at'])) : null;
         $sla_date = !empty($_POST['sla_date']) ? date('Y-m-d H:i:s', strtotime($_POST['sla_date'])) : null;
 
@@ -187,6 +188,7 @@ class JobController extends Controller {
                 'urgency' => $urgency,
                 'w9' => $w9,
                 'total_amount' => $total_amount,
+                'vendor_amount' => $vendor_amount,
                 'created_at' => $_POST['created_at'] ?? '',
                 'sla_date' => $_POST['sla_date'] ?? ''
             ];
@@ -206,6 +208,7 @@ class JobController extends Controller {
             assigned_to: $assigned_to,
             created_by: (int)$currentUser['id'],
             total_amount: $total_amount,
+            vendor_amount: $vendor_amount,
             created_at: $created_at,
             sla_date: $sla_date
         );
@@ -535,6 +538,48 @@ class JobController extends Controller {
             $this->json(['success' => true, 'total_amount' => $amount]);
         } else {
             $this->json(['error' => 'Database error: failed to update amount.'], 500);
+        }
+    }
+
+    /**
+     * Update total vendor amount for a job.
+     * POST /jobs/{id}/vendor-amount
+     */
+    public function updateVendorAmount(string $id): void {
+        Auth::middleware();
+
+        if (!CSRF::validate($_POST['csrf_token'] ?? '')) {
+            $this->json(['error' => 'CSRF security token verification failed.'], 403);
+            return;
+        }
+
+        $job = Job::findByRoute($id);
+        if (!$job) {
+            $this->json(['error' => 'Work order not found.'], 404);
+            return;
+        }
+
+        $currentUser = Auth::user();
+        $isAdminOrTL = in_array($currentUser['role'], ['admin', 'team_lead'], true);
+        $isAssigned = $job->assigned_to && (int)$job->assigned_to === (int)$currentUser['id'];
+
+        if (!$isAdminOrTL && !$isAssigned) {
+            $this->json(['error' => 'You do not have permission to update the vendor amount of this work order.'], 403);
+            return;
+        }
+
+        if (!isset($_POST['vendor_amount']) || !is_numeric($_POST['vendor_amount'])) {
+            $this->json(['error' => 'Invalid vendor amount value.'], 400);
+            return;
+        }
+
+        $amount = max(0.0, (float)$_POST['vendor_amount']);
+
+        if ($job->saveVendorAmount($amount)) {
+            ActivityLog::log((int)$currentUser['id'], $job->id, 'job_vendor_amount_update', "Updated total vendor amount to $" . number_format($amount, 2) . ".");
+            $this->json(['success' => true, 'vendor_amount' => $amount]);
+        } else {
+            $this->json(['error' => 'Database error: failed to update vendor amount.'], 500);
         }
     }
 

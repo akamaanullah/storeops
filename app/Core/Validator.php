@@ -12,7 +12,6 @@ class Validator {
     public const URGENCIES = ['Within SLA', 'Urgent'];
     public const W9_VALUES = ['Yes', 'No'];
     public const PAYMENT_TYPES = ['full', 'partial', 'pending'];
-    public const PAYMENT_CATEGORIES = ['client', 'vendor'];
     public const MAX_PAYMENT_AMOUNT = 999999.99;
     public const MIN_PASSWORD_LENGTH = 8;
     public const MIN_USERNAME_LENGTH = 2;

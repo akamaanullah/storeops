@@ -115,6 +115,17 @@ try {
         echo "'sla_date' already exists.<br>";
     }
 
+    // 6. Check/Add vendor_amount
+    $stmt = $db->query("SHOW COLUMNS FROM `jobs` LIKE 'vendor_amount'");
+    $hasVendorAmount = $stmt->fetch();
+    if (!$hasVendorAmount) {
+        echo "Adding 'vendor_amount' column...<br>";
+        $db->exec("ALTER TABLE `jobs` ADD COLUMN `vendor_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Total contract amount paid/owed to vendor' AFTER `total_amount`");
+        echo "<strong style='color: green;'>Added 'vendor_amount' successfully.</strong><br>";
+    } else {
+        echo "'vendor_amount' already exists.<br>";
+    }
+
     // Check payments table changes
     echo "<h2>Checking 'payments' table...</h2>";
     $stmt = $db->query("SHOW COLUMNS FROM `payments` LIKE 'type'");
@@ -130,17 +141,16 @@ try {
         }
     }
 
-    // Check category column in payments table
-    $stmt = $db->query("SHOW COLUMNS FROM `payments` LIKE 'category'");
-    $categoryCol = $stmt->fetch();
-    if (!$categoryCol) {
-        echo "Adding 'category' column to 'payments' table...<br>";
-        $db->exec("ALTER TABLE `payments` ADD COLUMN `category` ENUM('client', 'vendor') NOT NULL DEFAULT 'client' AFTER `type`");
-        echo "<strong style='color: green;'>Added 'category' column successfully.</strong><br>";
+    // 2. Check/Add party column
+    $stmt = $db->query("SHOW COLUMNS FROM `payments` LIKE 'party'");
+    $hasParty = $stmt->fetch();
+    if (!$hasParty) {
+        echo "Adding 'party' column to payments...<br>";
+        $db->exec("ALTER TABLE `payments` ADD COLUMN `party` ENUM('client', 'vendor') NOT NULL DEFAULT 'client' AFTER `type`");
+        echo "<strong style='color: green;'>Added 'party' column to payments successfully.</strong><br>";
     } else {
-        echo "'category' column already exists in 'payments' table.<br>";
+        echo "'party' column already exists in payments.<br>";
     }
-
 
     // Backfill reference codes if needed
     echo "<h2>Backfilling Reference Codes...</h2>";
