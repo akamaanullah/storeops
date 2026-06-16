@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `job_id` INT NOT NULL,
   `type` ENUM('full', 'partial', 'pending') NOT NULL,
+  `category` ENUM('client', 'vendor') NOT NULL DEFAULT 'client',
   `amount` DECIMAL(10, 2) NOT NULL,
   `note` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

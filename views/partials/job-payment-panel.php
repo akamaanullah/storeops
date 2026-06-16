@@ -7,14 +7,20 @@ $canRecordPayment = $isAdminOrTL || $isAssigned;
 $w9DeleteUrl = BASE_URL . $job->path() . '/w9/delete';
 $updateAmountUrl = BASE_URL . $job->path() . '/total-amount';
 
-$totalPaid = 0.00;
+$totalClientPaid = 0.00;
+$totalVendorPaid = 0.00;
 foreach ($payments as $pay) {
     if (($pay['type'] ?? '') !== 'pending') {
-        $totalPaid += (float)$pay['amount'];
+        if (($pay['category'] ?? 'client') === 'vendor') {
+            $totalVendorPaid += (float)$pay['amount'];
+        } else {
+            $totalClientPaid += (float)$pay['amount'];
+        }
     }
 }
 $totalAmount = (float)($job->total_amount ?? 0.00);
-$remainingBalance = $totalAmount - $totalPaid;
+$remainingBalance = $totalAmount - $totalClientPaid;
+$netJobRevenue = $totalClientPaid - $totalVendorPaid;
 ?>
 
 <!-- Financial Summary Panel -->
@@ -57,10 +63,22 @@ $remainingBalance = $totalAmount - $totalPaid;
             </div>
         <?php endif; ?>
 
-        <!-- Paid So Far -->
+        <!-- Paid So Far (Job Revenue) -->
         <div class="flex justify-between items-center py-2 border-b border-natural-border/50">
-            <span class="text-natural-muted font-medium">Paid So Far:</span>
-            <span id="total-paid-display" class="font-bold text-emerald-600">$<?= number_format($totalPaid, 2) ?></span>
+            <span class="text-natural-muted font-medium">Job Revenue (Collected):</span>
+            <span id="total-paid-display" class="font-bold text-emerald-600">$<?= number_format($totalClientPaid, 2) ?></span>
+        </div>
+
+        <!-- Vendor Cost -->
+        <div class="flex justify-between items-center py-2 border-b border-natural-border/50">
+            <span class="text-natural-muted font-medium text-rose-605">Vendor Cost:</span>
+            <span class="font-bold text-rose-600">$<?= number_format($totalVendorPaid, 2) ?></span>
+        </div>
+
+        <!-- Net Revenue -->
+        <div class="flex justify-between items-center py-2 border-b border-natural-border/50 bg-natural-pane/25 px-2.5 -mx-2.5 rounded-xl">
+            <span class="text-natural-heading font-bold">Net Revenue:</span>
+            <span class="font-bold <?= $netJobRevenue >= 0 ? 'text-emerald-600' : 'text-rose-500' ?>">$<?= number_format($netJobRevenue, 2) ?></span>
         </div>
 
         <!-- Remaining Balance -->
@@ -147,18 +165,33 @@ $remainingBalance = $totalAmount - $totalPaid;
         <?php else: ?>
             <div class="divide-y divide-natural-border max-h-56 overflow-y-auto pr-1">
                 <?php foreach ($payments as $pay): ?>
+                    <?php
+                        $isVendor = (($pay['category'] ?? 'client') === 'vendor');
+                        $catBadge = $isVendor ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100';
+                        $catLabel = $isVendor ? 'Vendor' : 'Client';
+                    ?>
                     <div class="py-3 flex flex-col space-y-1.5 text-xs text-natural-text leading-relaxed">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-natural-heading">$<?= number_format($pay['amount'], 2) ?></span>
-                            <div class="flex items-center space-x-2">
+                            <span class="font-bold <?= $isVendor ? 'text-rose-600' : 'text-natural-heading' ?>">
+                                <?= $isVendor ? '- ' : '' ?>$<?= number_format($pay['amount'], 2) ?>
+                            </span>
+                            <div class="flex items-center space-x-1.5">
+                                <span class="px-1.5 py-0.5 rounded text-[8px] font-bold border <?= $catBadge ?>"><?= $catLabel ?></span>
                                 <span class="px-2 py-0.5 bg-natural-pane text-natural-primary uppercase tracking-wider font-bold text-[8px] rounded border border-natural-border"><?= htmlspecialchars($pay['type']) ?></span>
                                 <?php if ($canRecordPayment): ?>
-                                    <button type="button" onclick="editPaymentLedger(<?= htmlspecialchars(json_encode([
-                                        'id'     => (int)$pay['id'],
-                                        'amount' => (float)$pay['amount'],
-                                        'type'   => $pay['type'],
-                                        'note'   => $pay['note']
-                                    ])) ?>)" class="text-[10px] text-natural-primary font-bold hover:underline transition-colors focus:outline-none">Edit</button>
+                                    <?php
+                                        // Non-admins cannot edit vendor payments
+                                        $canEditThis = !$isVendor || (Auth::user()['role'] ?? '') === 'admin';
+                                        if ($canEditThis):
+                                    ?>
+                                        <button type="button" onclick="editPaymentLedger(<?= htmlspecialchars(json_encode([
+                                            'id'       => (int)$pay['id'],
+                                            'amount'   => (float)$pay['amount'],
+                                            'type'     => $pay['type'],
+                                            'category' => $pay['category'] ?? 'client',
+                                            'note'     => $pay['note']
+                                        ])) ?>)" class="text-[10px] text-natural-primary font-bold hover:underline transition-colors focus:outline-none">Edit</button>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -192,6 +225,18 @@ $remainingBalance = $totalAmount - $totalPaid;
                     </div>
                 </div>
 
+                <?php if ((Auth::user()['role'] ?? '') === 'admin'): ?>
+                    <div class="space-y-1">
+                        <label for="category_billing" class="text-[8px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Category</label>
+                        <select id="category_billing" name="category" class="w-full px-2 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none">
+                            <option value="client">Client Payment (Revenue)</option>
+                            <option value="vendor">Vendor Payment (Cost)</option>
+                        </select>
+                    </div>
+                <?php else: ?>
+                    <input type="hidden" id="category_billing" name="category" value="client">
+                <?php endif; ?>
+
                 <div class="space-y-1">
                     <label for="note_billing" class="text-[8px] font-bold text-natural-muted uppercase tracking-widest block font-mono">Payment Note</label>
                     <input id="note_billing" type="text" name="note" required placeholder="Card authorization code, check number..." class="w-full px-3 py-2 border border-natural-border rounded-xl bg-natural-bg/50 focus:outline-none">
@@ -223,6 +268,10 @@ $remainingBalance = $totalAmount - $totalPaid;
                 document.getElementById('amount_billing').value = payment.amount;
                 document.getElementById('type_billing').value = payment.type;
                 document.getElementById('note_billing').value = payment.note;
+                const categoryEl = document.getElementById('category_billing');
+                if (categoryEl) {
+                    categoryEl.value = payment.category || 'client';
+                }
 
                 // Switch form mode
                 form.action = `<?= BASE_URL ?>/payments/${payment.id}/edit`;
@@ -247,6 +296,10 @@ $remainingBalance = $totalAmount - $totalPaid;
                 document.getElementById('amount_billing').value = '';
                 document.getElementById('type_billing').value = 'partial';
                 document.getElementById('note_billing').value = '';
+                const categoryEl = document.getElementById('category_billing');
+                if (categoryEl) {
+                    categoryEl.value = 'client';
+                }
 
                 // Switch back to Record mode
                 form.action = defaultBillingFormAction || `<?= BASE_URL . $job->path() ?>/payment`;

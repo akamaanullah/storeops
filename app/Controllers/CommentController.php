@@ -270,6 +270,7 @@ class CommentController extends Controller {
 
         $amount = (float)($_POST['amount'] ?? 0);
         $type = $_POST['type'] ?? 'partial';
+        $category = $_POST['category'] ?? 'client';
         $note = trim($_POST['note'] ?? '');
 
         if ($amount <= 0 || $amount > Validator::MAX_PAYMENT_AMOUNT) {
@@ -282,7 +283,26 @@ class CommentController extends Controller {
             die('Invalid payment type.');
         }
 
-        $payment = new Payment(null, $jobId, $type, $amount, $note);
+        // Enforce security: only admin can record 'vendor' payments
+        if ($category === 'vendor') {
+            if (($currentUser['role'] ?? '') !== 'admin') {
+                $category = 'client'; // Force to client if not admin
+            }
+        }
+
+        if (!Validator::inEnum($category, Validator::PAYMENT_CATEGORIES)) {
+            http_response_code(400);
+            die('Invalid payment category.');
+        }
+
+        $payment = new Payment(
+            id: null,
+            job_id: $jobId,
+            type: $type,
+            category: $category,
+            amount: $amount,
+            note: $note
+        );
 
         if ($payment->save()) {
             ActivityLog::log((int)$currentUser['id'], $jobId, 'payment_add', "Recorded a {$type} payment of $" . number_format($amount, 2) . ". Details: {$note}");
@@ -358,6 +378,7 @@ class CommentController extends Controller {
 
         $amount = (float)($_POST['amount'] ?? 0);
         $type = $_POST['type'] ?? 'partial';
+        $category = $_POST['category'] ?? 'client';
         $note = trim($_POST['note'] ?? '');
 
         if ($amount <= 0 || $amount > Validator::MAX_PAYMENT_AMOUNT) {
@@ -372,8 +393,21 @@ class CommentController extends Controller {
             die('Invalid payment type.');
         }
 
+        // Security check: only admin can edit or set 'vendor' payments
+        $isAdmin = (($currentUser['role'] ?? '') === 'admin');
+        if (($payment->category === 'vendor' || $category === 'vendor') && !$isAdmin) {
+            Auth::denyAccess('Only Administrators can edit or assign vendor payments.');
+            return;
+        }
+
+        if (!Validator::inEnum($category, Validator::PAYMENT_CATEGORIES)) {
+            http_response_code(400);
+            die('Invalid payment category.');
+        }
+
         $payment->amount = $amount;
         $payment->type = $type;
+        $payment->category = $category;
         $payment->note = $note;
 
         if ($payment->update()) {

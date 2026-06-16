@@ -24,15 +24,22 @@ class AnalyticsController extends Controller {
             $stmt = $db->query("SELECT IFNULL(SUM(total_amount), 0.00) FROM jobs");
             $totalContractValue = (float)$stmt->fetchColumn();
 
-            // Total payments collected (completed full/partial payments)
-            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending'");
+            // Total client collections (Job Revenue)
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND category = 'client'");
             $totalCollected = (float)$stmt->fetchColumn();
 
-            // Total pending payments
-            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type = 'pending'");
+            // Total vendor payments (Vendor Cost)
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type != 'pending' AND category = 'vendor'");
+            $totalVendorCost = (float)$stmt->fetchColumn();
+
+            // Net Revenue (Job Revenue - Vendor Cost)
+            $netRevenue = $totalCollected - $totalVendorCost;
+
+            // Total pending client payments
+            $stmt = $db->query("SELECT IFNULL(SUM(amount), 0.00) FROM payments WHERE type = 'pending' AND category = 'client'");
             $totalPending = (float)$stmt->fetchColumn();
 
-            // Outstanding balance
+            // Outstanding balance (Total Contract - Client Collected)
             $outstandingBalance = max(0.00, $totalContractValue - $totalCollected);
 
             // Jobs counters
@@ -57,7 +64,7 @@ class AnalyticsController extends Controller {
                 SELECT DATE_FORMAT(created_at, '%b %Y') as month_label,
                        SUM(amount) as total
                 FROM payments
-                WHERE type != 'pending'
+                WHERE type != 'pending' AND category = 'client'
                 GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b %Y')
                 ORDER BY MIN(created_at) ASC
                 LIMIT 12
@@ -69,7 +76,7 @@ class AnalyticsController extends Controller {
                 SELECT u.id, u.full_name, u.role,
                        COUNT(j.id) as total_assigned,
                        SUM(CASE WHEN j.status = 'Done' THEN 1 ELSE 0 END) as total_completed,
-                       IFNULL(SUM(CASE WHEN p.type != 'pending' THEN p.amount ELSE 0 END), 0) as total_collected
+                       IFNULL(SUM(CASE WHEN p.type != 'pending' AND p.category = 'client' THEN p.amount ELSE 0 END), 0) as total_collected
                 FROM users u
                 LEFT JOIN jobs j ON j.assigned_to = u.id
                 LEFT JOIN payments p ON p.job_id = j.id
@@ -93,6 +100,8 @@ class AnalyticsController extends Controller {
                 'metrics' => [
                     'total_contract' => $totalContractValue,
                     'total_collected' => $totalCollected,
+                    'total_vendor' => $totalVendorCost,
+                    'net_revenue' => $netRevenue,
                     'total_pending' => $totalPending,
                     'outstanding' => $outstandingBalance,
                     'total_jobs' => $totalJobs,

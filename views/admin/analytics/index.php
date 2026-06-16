@@ -44,7 +44,7 @@ if (empty($trendLabels)) {
     </div>
 
     <!-- Summary Cards Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-5">
         <!-- Card 1: Total Job Value -->
         <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
             <div class="flex items-center justify-between">
@@ -61,10 +61,10 @@ if (empty($trendLabels)) {
             </div>
         </div>
 
-        <!-- Card 2: Collected Revenue -->
+        <!-- Card 2: Job Revenue -->
         <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
             <div class="flex items-center justify-between">
-                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Collected Revenue</span>
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Job Revenue</span>
                 <div class="w-7 h-7 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -73,27 +73,62 @@ if (empty($trendLabels)) {
             </div>
             <div>
                 <h3 class="text-xl font-bold text-emerald-600 tracking-tight font-sans">$<?= number_format($metrics['total_collected'], 2) ?></h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Payments successfully cleared</p>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Client payments cleared</p>
             </div>
         </div>
 
-        <!-- Card 3: Outstanding Balance -->
+        <!-- Card 3: Vendor Payments -->
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Vendor Payments</span>
+                <div class="w-7 h-7 rounded-lg bg-rose-50 border border-rose-105 flex items-center justify-center text-rose-500 shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-rose-500 tracking-tight font-sans">$<?= number_format($metrics['total_vendor'], 2) ?></h3>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Total payout to operational vendors</p>
+            </div>
+        </div>
+
+        <!-- Card 4: Net Revenue -->
+        <?php $isNetPositive = ($metrics['net_revenue'] ?? 0.00) >= 0; ?>
+        <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
+            <div class="flex items-center justify-between">
+                <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Net Revenue</span>
+                <div class="w-7 h-7 rounded-lg <?= $isNetPositive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-500' ?> border flex items-center justify-center shrink-0">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold <?= $isNetPositive ? 'text-emerald-600' : 'text-rose-500' ?> tracking-tight font-sans">
+                    $<?= number_format($metrics['net_revenue'], 2) ?>
+                </h3>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Job Revenue minus Vendor Costs</p>
+            </div>
+        </div>
+
+        <!-- Card 5: Outstanding Balance -->
         <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Outstanding Balance</span>
-                <div class="w-7 h-7 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
+                <div class="w-7 h-7 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>
                 </div>
             </div>
             <div>
-                <h3 class="text-xl font-bold text-rose-500 tracking-tight font-sans">$<?= number_format($metrics['outstanding'], 2) ?></h3>
-                <p class="text-[9.5px] text-natural-muted mt-0.5">Remaining uncollected balance</p>
+                <h3 class="text-xl font-bold text-amber-500 tracking-tight font-sans">$<?= number_format($metrics['outstanding'], 2) ?></h3>
+                <p class="text-[9.5px] text-natural-muted mt-0.5">Client balance remaining to collect</p>
             </div>
         </div>
 
-        <!-- Card 4: Work Order Completion -->
+        <!-- Card 6: Work Order Completion -->
         <div class="bg-white border border-natural-border rounded-3xl shadow-sm p-6 space-y-2.5">
             <div class="flex items-center justify-between">
                 <span class="text-[9px] font-bold text-natural-muted uppercase tracking-widest font-mono block">Completion Rate</span>

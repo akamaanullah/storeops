@@ -130,6 +130,18 @@ try {
         }
     }
 
+    // Check category column in payments table
+    $stmt = $db->query("SHOW COLUMNS FROM `payments` LIKE 'category'");
+    $categoryCol = $stmt->fetch();
+    if (!$categoryCol) {
+        echo "Adding 'category' column to 'payments' table...<br>";
+        $db->exec("ALTER TABLE `payments` ADD COLUMN `category` ENUM('client', 'vendor') NOT NULL DEFAULT 'client' AFTER `type`");
+        echo "<strong style='color: green;'>Added 'category' column successfully.</strong><br>";
+    } else {
+        echo "'category' column already exists in 'payments' table.<br>";
+    }
+
+
     // Backfill reference codes if needed
     echo "<h2>Backfilling Reference Codes...</h2>";
     $backfillCount = $db->exec("
