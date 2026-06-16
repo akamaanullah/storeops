@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # If request is empty (root folder), rewrite directly to public/index.php to avoid directory redirect
+    RewriteRule ^$ public/index.php [L]
+    
+    # Rewrite all other requests to the public directory (except if already in public)
+    RewriteCond %{REQUEST_URI} !/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Block sensitive files if document root is misconfigured to project root
+<FilesMatch "^(\.env|\.env\.example|schema\.sql)$">
+    Require all denied
+</FilesMatch>

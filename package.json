@@ -1,0 +1,19 @@
+{
+  "name": "job-tracker",
+  "version": "1.0.0",
+  "description": "StoreOps — store operations management platform built with PHP 8+ (Custom MVC), MySQL 8+, and Vanilla JS (Fetch API).",
+  "main": "index.js",
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i assets/css/input.css -o public/css/style.css",
+    "watch:css": "npx @tailwindcss/cli -i assets/css/input.css -o public/css/style.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.1",
+    "tailwindcss": "^4.3.1"
+  }
+}
